@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Moss Intelligence Soundscape</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.26/Tone.js"></script>
+  <style>
+      /* General body styles */
+      * {
+        box-sizing: border-box;
+      }
+      body {
+          background: black;
+          margin: 0;
+          overflow: hidden;
+          /* Show cursor by default; hide after Start is clicked */
+          cursor: default;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+          font-family: Arial, sans-serif; /* Simple, clean default font */
+      }
+
+      /********************************************************
+       * BUTTON & LINK STYLES (Start & "More about Moss" link)
+       ********************************************************/
+      #startButton,
+      #infoButton {
+          position: absolute;
+          z-index: 10;
+          padding: 15px 30px;
+          font-size: 18px;
+          cursor: pointer;
+          border: none;
+          color: #000;
+          border-radius: 5px;
+          font-weight: bold;
+          transition: background 0.3s, box-shadow 0.3s;
+          background: linear-gradient(
+            135deg,
+            rgba(0, 255, 127, 1) 0%,
+            rgba(120, 255, 180, 1) 100%
+          );
+          /* Mild neon-style box shadow */
+          box-shadow: 0 0 10px rgba(0, 255, 127, 0.7);
+          text-align: center;
+          line-height: 1.4;
+      }
+
+      #startButton:hover,
+      #infoButton:hover {
+          background: linear-gradient(
+            135deg,
+            rgba(0, 255, 160, 1) 0%,
+            rgba(130, 255, 190, 1) 100%
+          );
+          box-shadow: 0 0 15px rgba(0, 255, 127, 1);
+      }
+
+      /* Positioning the Start button specifically */
+      #startButton {
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+      }
+
+      /* "More about Moss Intelligence" button at bottom center */
+      #infoButton {
+          bottom: 5px;
+          left: 50%;
+          transform: translateX(-50%);
+          font-size: 16px;
+      }
+
+      /********************************************************
+       * MOSS PATCH (circle)
+       ********************************************************/
+      .moss {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 85vmin;
+          height: 85vmin;
+          background: radial-gradient(
+            circle,
+            rgba(0, 0, 0, 0) 30%,
+            rgba(0, 0, 0, 1) 70%
+          ),
+          url('https://raw.githubusercontent.com/EDELMAAN/mosstexture/refs/heads/main/mosstexture.webp')
+          no-repeat center center;
+          background-size: cover;
+          border-radius: 50%;
+          transform: translate(-50%, -50%);
+          transition: filter 1s ease-in-out;
+          z-index: 5;
+      }
+
+      /********************************************************
+       * GLOW EFFECT
+       ********************************************************/
+      .glow {
+          position: absolute;
+          width: 160px;
+          height: 160px;
+          background: radial-gradient(
+            circle,
+            rgba(255, 255, 255, 0.7) 0%,
+            rgba(0, 0, 0, 0) 100%
+          );
+          border-radius: 20%;
+          pointer-events: none;
+          opacity: 0.4;
+          transition: transform 0.01s linear, opacity 5s ease-out, background-color 25s ease-in-out;
+          mix-blend-mode: overlay;
+          z-index: 6;
+      }
+
+      /********************************************************
+       * LABELS: Author 
+       ********************************************************/
+      #authorNote {
+          position: absolute;
+          color: #ffffff;
+          font-size: 14px;
+          z-index: 10;
+          text-shadow: 0 0 6px rgba(0, 255, 127, 0.7);
+          bottom: 5px;
+          left: 5px;
+      }
+  </style>
+</head>
+<body>
+  <!-- UI Elements -->
+  <!-- Start button now includes the "Please turn on your speakers" text -->
+  <button id="startButton">
+    Start Experience<br>
+    <small style="font-size: 14px; font-weight: normal;">(Please turn on your speakers)</small>
+  </button>
+
+  <div id="authorNote">Johann Edelmann</div>
+  
+  <!-- Link button to Prezi presentation -->
+  <a href="https://prezi.com/view/0zKakpR6pfl7myyX8DAq/" target="_blank">
+      <button id="infoButton">More about Moss Intelligence</button>
+  </a>
+
+  <!-- Moss patch -->
+  <div class="moss" id="moss"></div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const startButton = document.getElementById("startButton");
+      const moss = document.getElementById("moss");
+      let started = false;
+      let lastTriggerTime = 0;
+      let glowColorIndex = 0;
+
+      let synth, twinkleSynth, birdSynth, bassSynth;
+      const baseNotes = ["C3", "D3", "E3", "F3", "G3", "A3", "B3"];
+      const twinkleNotes = ["C5", "E5", "G5", "A5", "B5"];
+      const birdNotes = ["C6", "E6", "G6", "A6"];
+      const bassNotes = ["C2", "D2", "E2", "F2", "G2", "A2"];
+
+      // Global reverb and limiter
+      const reverb = new Tone.Reverb({ decay: 10, wet: 0.8 }).toDestination();
+      const limiter = new Tone.Limiter(-25).toDestination();
+
+      // Start button event
+      startButton.addEventListener("click", async function () {
+        // Hide the cursor once the user starts
+        document.body.style.cursor = "none";
+
+        await Tone.start();
+        startButton.style.display = "none";
+        startAudio();
+      });
+
+      function startAudio() {
+        if (started) return;
+        started = true;
+
+        // Initialize synths
+        synth = new Tone.PolySynth(Tone.Synth, { maxPolyphony: 3 }).toDestination();
+        synth.set({
+            oscillator: { type: "sine" },
+            envelope: { attack: 1, sustain: 0.3, release: 4 },
+            volume: -25
+        });
+        synth.chain(reverb, limiter);
+
+        twinkleSynth = new Tone.PolySynth(Tone.Synth, { maxPolyphony: 2 }).toDestination();
+        twinkleSynth.set({
+            oscillator: { type: "triangle" },
+            envelope: { attack: 0.1, decay: 0.3, sustain: 0.3, release: 1 },
+            volume: -30
+        });
+        twinkleSynth.chain(reverb, limiter);
+
+        birdSynth = new Tone.Synth({
+            oscillator: { type: "sine" },
+            envelope: { attack: 0.05, decay: 0.1, sustain: 0.1, release: 0.3 },
+            volume: -28
+        }).toDestination();
+        birdSynth.chain(reverb, limiter);
+
+        bassSynth = new Tone.Synth({
+            oscillator: { type: "sawtooth" },
+            envelope: { attack: 2, decay: 1, sustain: 1, release: 5 },
+            volume: -30
+        }).toDestination();
+        bassSynth.chain(reverb, limiter);
+      }
+
+      function createGlow(x, y) {
+        const glow = document.createElement("div");
+        glow.classList.add("glow");
+        document.body.appendChild(glow);
+
+        glow.style.left = `${x}px`;
+        glow.style.top = `${y}px`;
+        glow.style.opacity = "1";
+
+        const colors = [
+          "rgba(255, 255, 255, 0.8)",
+          "rgba(255, 255, 255, 0.5)",
+          "rgba(255, 255, 255, 0.5)",
+          "rgba(255, 255, 255, 0.8)",
+          "rgba(255, 255, 255, 0.8)",
+          "rgba(255, 255, 255, 0.5)"
+        ];
+        glow.style.background =
+          `radial-gradient(circle, ${colors[glowColorIndex]} 0%, rgba(0, 0, 0, 0) 100%)`;
+        glowColorIndex = (glowColorIndex + 1) % colors.length;
+
+        // Fade out
+        setTimeout(() => {
+          glow.style.opacity = "0";
+          setTimeout(() => {
+            document.body.removeChild(glow);
+          }, 5000);
+        }, 100);
+      }
+
+      /*********************************************************
+       * Mousemove with OFFSET and optional expandFactor
+       *********************************************************/
+      document.addEventListener("mousemove", (event) => {
+        if (!started) return;
+
+        const now = Tone.now();
+        if (now - lastTriggerTime < 0.1) return; // avoid too many triggers
+        lastTriggerTime = now;
+
+        // 1) Circle bounding box
+        const rect = moss.getBoundingClientRect();
+        const radius = rect.width / 2;
+
+        // SHIFT the circle center
+        const offsetX = -40;  // negative => shift left
+        const offsetY = -40;  // negative => shift up
+        const centerX = rect.left + radius + offsetX;
+        const centerY = rect.top + radius + offsetY;
+
+        // EXPAND the radius if desired
+        const expandFactor = 1; // no expansion by default, set to e.g. 1.1 for 10% bigger
+        const expandedRadius = radius * expandFactor;
+
+        // 2) Distance check for a circle (with offset center & expanded radius)
+        const dx = event.clientX - centerX;
+        const dy = event.clientY - centerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance <= expandedRadius) {
+          // inside circle area
+          const xPercent = (event.clientX - rect.left) / rect.width;
+          const yPercent = (event.clientY - rect.top) / rect.height;
+
+          // random probability triggers
+          if (Math.random() < 0.6) {
+            const noteIndex = Math.floor(xPercent * baseNotes.length);
+            synth.triggerAttackRelease([baseNotes[noteIndex]], "1s");
+          }
+          if (Math.random() < 0.3) {
+            const twinkleIndex = Math.floor(yPercent * twinkleNotes.length);
+            twinkleSynth.triggerAttackRelease(twinkleNotes[twinkleIndex], "0.5s");
+          }
+          if (Math.random() < 0.2) {
+            const birdIndex = Math.floor(Math.random() * birdNotes.length);
+            birdSynth.triggerAttackRelease(birdNotes[birdIndex], "0.3s");
+          }
+
+          // Create the glow at mouse position
+          createGlow(event.clientX, event.clientY);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
