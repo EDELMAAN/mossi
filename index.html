@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Moss Intelligence Soundscape</title>
+  <title>Moss Intelligence Soundscape Teaser</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.26/Tone.js"></script>
   <style>
-      /* General body styles */
+      /* Reset & Body */
       * {
         box-sizing: border-box;
       }
@@ -14,22 +14,18 @@
           background: black;
           margin: 0;
           overflow: hidden;
-          /* Show cursor by default; hide after Start is clicked */
           cursor: default;
           display: flex;
           align-items: center;
           justify-content: center;
           height: 100vh;
-          font-family: Arial, sans-serif; /* Simple, clean default font */
+          font-family: Arial, sans-serif;
       }
 
-      /********************************************************
-       * BUTTON & LINK STYLES (Start & "More about Moss" link)
-       ********************************************************/
+      /* Buttons (Start / Info) */
       #startButton,
       #infoButton {
           position: absolute;
-          z-index: 10;
           padding: 15px 30px;
           font-size: 18px;
           cursor: pointer;
@@ -43,12 +39,10 @@
             rgba(0, 255, 127, 1) 0%,
             rgba(120, 255, 180, 1) 100%
           );
-          /* Mild neon-style box shadow */
           box-shadow: 0 0 10px rgba(0, 255, 127, 0.7);
           text-align: center;
           line-height: 1.4;
       }
-
       #startButton:hover,
       #infoButton:hover {
           background: linear-gradient(
@@ -59,24 +53,37 @@
           box-shadow: 0 0 15px rgba(0, 255, 127, 1);
       }
 
-      /* Positioning the Start button specifically */
+      /* Positioning Start Button - put on top via higher z-index */
       #startButton {
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
+          z-index: 9999; /* ensure button is above all else */
       }
 
-      /* "More about Moss Intelligence" button at bottom center */
+      /* Info Button at Bottom Center */
       #infoButton {
           bottom: 5px;
           left: 50%;
           transform: translateX(-50%);
           font-size: 16px;
+          z-index: 10;
       }
 
-      /********************************************************
-       * MOSS PATCH (circle)
-       ********************************************************/
+      /* Author Note */
+      #authorNote {
+          position: absolute;
+          color: #ffffff;
+          font-size: 14px;
+          z-index: 10;
+          text-shadow: 0 0 6px rgba(0, 255, 127, 0.7);
+          bottom: 5px;
+          left: 5px;
+      }
+
+      /* Moss Patch (Circle) 
+         Pointer events initially disabled so it won't interfere
+         with button clicks. We'll enable it after Start is pressed. */
       .moss {
           position: absolute;
           top: 50%;
@@ -95,85 +102,136 @@
           transform: translate(-50%, -50%);
           transition: filter 1s ease-in-out;
           z-index: 5;
+          pointer-events: none; /* disabled until Start is pressed */
       }
 
-      /********************************************************
-       * GLOW EFFECT
-       ********************************************************/
+      /* Glow Effect */
       .glow {
           position: absolute;
           width: 160px;
           height: 160px;
-          background: radial-gradient(
-            circle,
-            rgba(255, 255, 255, 0.7) 0%,
-            rgba(0, 0, 0, 0) 100%
-          );
           border-radius: 20%;
           pointer-events: none;
           opacity: 0.4;
-          transition: transform 0.01s linear, opacity 5s ease-out, background-color 25s ease-in-out;
+          transition:
+            transform 0.01s linear,
+            opacity 5s ease-out,
+            background-color 0.5s ease-in-out;
           mix-blend-mode: overlay;
           z-index: 6;
       }
 
-      /********************************************************
-       * LABELS: Author 
-       ********************************************************/
-      #authorNote {
+      /*****************************************************
+       * MOSS MESSAGE (glowing text)
+       *****************************************************/
+      .moss-message {
           position: absolute;
           color: #ffffff;
           font-size: 14px;
-          z-index: 10;
-          text-shadow: 0 0 6px rgba(0, 255, 127, 0.7);
-          bottom: 5px;
-          left: 5px;
+          z-index: 999; /* ensure on top */
+          text-shadow:
+            0 0 5px rgba(0, 255, 127, 0.8),
+            0 0 10px rgba(0, 255, 127, 0.5);
+          pointer-events: none;
+          opacity: 0;
+          animation: fadeInOut 4s forwards ease-in-out;
+          white-space: nowrap;
+      }
+
+      @keyframes fadeInOut {
+          0% {
+            transform: translate(-50%, -50%) scale(0.9);
+            opacity: 0;
+          }
+          15% {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+          }
+          85% {
+            opacity: 1;
+          }
+          100% {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 0;
+          }
       }
   </style>
 </head>
 <body>
   <!-- UI Elements -->
-  <!-- Start button now includes the "Please turn on your speakers" text -->
   <button id="startButton">
-    Start Experience<br>
+    What if moss could speak to us?<br>
     <small style="font-size: 14px; font-weight: normal;">(Please turn on your speakers)</small>
   </button>
 
   <div id="authorNote">Johann Edelmann</div>
   
-  <!-- Link button to Prezi presentation -->
   <a href="https://prezi.com/view/0zKakpR6pfl7myyX8DAq/" target="_blank">
       <button id="infoButton">More about Moss Intelligence</button>
   </a>
 
-  <!-- Moss patch -->
+  <!-- Moss Patch -->
   <div class="moss" id="moss"></div>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const startButton = document.getElementById("startButton");
       const moss = document.getElementById("moss");
+
       let started = false;
       let lastTriggerTime = 0;
-      let glowColorIndex = 0;
 
+      /********************************************************
+       * STRESS MECHANIC
+       * Only increments on "fast" movement. 
+       * Stress decays quickly so it returns to normal in ~2-3s.
+       ********************************************************/
+      let stress = 0;
+      let lastX = null;
+      let lastY = null;
+      let lastMoveTime = null;
+
+      // Decay stress by 30 each second
+      setInterval(() => {
+        stress = Math.max(0, stress - 30);
+        updateSynthForStress();
+      }, 1000);
+
+      /********************************************************
+       * SOUND & TONE SETUP
+       ********************************************************/
       let synth, twinkleSynth, birdSynth, bassSynth;
+
+      // Note sets
       const baseNotes = ["C3", "D3", "E3", "F3", "G3", "A3", "B3"];
       const twinkleNotes = ["C5", "E5", "G5", "A5", "B5"];
       const birdNotes = ["C6", "E6", "G6", "A6"];
       const bassNotes = ["C2", "D2", "E2", "F2", "G2", "A2"];
 
-      // Global reverb and limiter
+      // Poetic lines
+      const mossMessages = [
+        "I remember the time before you. The air was colder.",
+        "You bring warmth. Your breath touches my surface.",
+        "The world trembles. My roots know before you do.",
+        "I sense your presence. Do you sense mine?",
+        "I have seen ages pass. I still survive.",
+        "Water shapes me, light nurtures me, you fascinate me.",
+        "In your silence, I resonate."
+      ];
+
+      // Effects
       const reverb = new Tone.Reverb({ decay: 10, wet: 0.8 }).toDestination();
       const limiter = new Tone.Limiter(-25).toDestination();
 
-      // Start button event
+      // Start Button Click
       startButton.addEventListener("click", async function () {
-        // Hide the cursor once the user starts
-        document.body.style.cursor = "none";
-
+        document.body.style.cursor = "none"; // Hide cursor after click
         await Tone.start();
-        startButton.style.display = "none";
+        startButton.style.display = "none";   // Hide the button
+
+        // Enable the moss to register pointer events:
+        moss.style.pointerEvents = "auto";
+
         startAudio();
       });
 
@@ -213,71 +271,120 @@
         bassSynth.chain(reverb, limiter);
       }
 
+      /*********************************************************
+       * UPDATE SYNTH CHARACTER WHEN STRESS CHANGES
+       * If stress is above 50, the main synth changes to "square"
+       *********************************************************/
+      function updateSynthForStress() {
+        if (!synth) return;
+        if (stress > 50) {
+          // Over threshold => more intense wave
+          synth.set({ oscillator: { type: "square" }});
+        } else {
+          // Return to gentler wave
+          synth.set({ oscillator: { type: "sine" }});
+        }
+      }
+
+      /*********************************************************
+       * CREATE GLOW (Color changes based on stress)
+       * < 50 => white
+       * 50-80 => yellowish
+       * >80 => red
+       *********************************************************/
       function createGlow(x, y) {
         const glow = document.createElement("div");
         glow.classList.add("glow");
         document.body.appendChild(glow);
 
-        glow.style.left = `${x}px`;
-        glow.style.top = `${y}px`;
-        glow.style.opacity = "1";
+        let glowColor = "255, 255, 255"; // white
+        if (stress > 50 && stress <= 80) {
+          glowColor = "255, 255, 0"; // yellowish
+        } else if (stress > 80) {
+          glowColor = "255, 0, 0";   // red
+        }
 
-        const colors = [
-          "rgba(255, 255, 255, 0.8)",
-          "rgba(255, 255, 255, 0.5)",
-          "rgba(255, 255, 255, 0.5)",
-          "rgba(255, 255, 255, 0.8)",
-          "rgba(255, 255, 255, 0.8)",
-          "rgba(255, 255, 255, 0.5)"
-        ];
-        glow.style.background =
-          `radial-gradient(circle, ${colors[glowColorIndex]} 0%, rgba(0, 0, 0, 0) 100%)`;
-        glowColorIndex = (glowColorIndex + 1) % colors.length;
+        glow.style.background = `radial-gradient(circle, rgba(${glowColor},0.7) 0%, rgba(0, 0, 0, 0) 100%)`;
+        glow.style.left = `${x - 80}px`;
+        glow.style.top = `${y - 80}px`;
 
-        // Fade out
+        // Fade out after short time
         setTimeout(() => {
           glow.style.opacity = "0";
           setTimeout(() => {
-            document.body.removeChild(glow);
+            if (glow.parentNode) glow.parentNode.removeChild(glow);
           }, 5000);
         }, 100);
       }
 
       /*********************************************************
-       * Mousemove with OFFSET and optional expandFactor
+       * MOSS TEXT BUBBLE (glowing text)
+       *********************************************************/
+      function showMossMessage(x, y) {
+        const bubble = document.createElement("div");
+        bubble.className = "moss-message";
+        const msg = mossMessages[Math.floor(Math.random() * mossMessages.length)];
+        bubble.textContent = msg;
+
+        bubble.style.left = x + "px";
+        bubble.style.top = y + "px";
+        document.body.appendChild(bubble);
+
+        // Remove after animation
+        setTimeout(() => {
+          if (bubble.parentNode) {
+            bubble.parentNode.removeChild(bubble);
+          }
+        }, 4000);
+      }
+
+      /*********************************************************
+       * MOUSEMOVE: CHECK SPEED, CHECK IF INSIDE MOSS
        *********************************************************/
       document.addEventListener("mousemove", (event) => {
         if (!started) return;
 
-        const now = Tone.now();
-        if (now - lastTriggerTime < 0.1) return; // avoid too many triggers
-        lastTriggerTime = now;
+        const now = performance.now();
+        let speed = 0;
 
-        // 1) Circle bounding box
+        if (lastX !== null && lastY !== null && lastMoveTime !== null) {
+          const dx = event.clientX - lastX;
+          const dy = event.clientY - lastY;
+          const dt = now - lastMoveTime;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          // Speed in px/ms
+          speed = dist / dt;
+        }
+
+        lastX = event.clientX;
+        lastY = event.clientY;
+        lastMoveTime = now;
+
+        const timeNow = Tone.now();
+        if (timeNow - lastTriggerTime < 0.1) return; // limit triggers
+        lastTriggerTime = timeNow;
+
+        // Moss bounding box
         const rect = moss.getBoundingClientRect();
         const radius = rect.width / 2;
+        const centerX = rect.left + radius;
+        const centerY = rect.top + radius;
 
-        // SHIFT the circle center
-        const offsetX = -40;  // negative => shift left
-        const offsetY = -40;  // negative => shift up
-        const centerX = rect.left + radius + offsetX;
-        const centerY = rect.top + radius + offsetY;
-
-        // EXPAND the radius if desired
-        const expandFactor = 1; // no expansion by default, set to e.g. 1.1 for 10% bigger
-        const expandedRadius = radius * expandFactor;
-
-        // 2) Distance check for a circle (with offset center & expanded radius)
         const dx = event.clientX - centerX;
         const dy = event.clientY - centerY;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
-        if (distance <= expandedRadius) {
-          // inside circle area
+        if (distance <= radius) {
+          // Only increment stress if speed is above ~0.2 px/ms
+          if (speed > 0.2) {
+            stress = Math.min(stress + 6, 100);
+            updateSynthForStress();
+          }
+
+          // Trigger random notes
           const xPercent = (event.clientX - rect.left) / rect.width;
           const yPercent = (event.clientY - rect.top) / rect.height;
 
-          // random probability triggers
           if (Math.random() < 0.6) {
             const noteIndex = Math.floor(xPercent * baseNotes.length);
             synth.triggerAttackRelease([baseNotes[noteIndex]], "1s");
@@ -291,8 +398,19 @@
             birdSynth.triggerAttackRelease(birdNotes[birdIndex], "0.3s");
           }
 
-          // Create the glow at mouse position
+          // If stress is very high (>80), random chance of dissonant chord
+          if (stress > 80 && Math.random() < 0.3) {
+            const dissonantNotes = ["C4", "Db4", "D4", "F#4"];
+            synth.triggerAttackRelease(dissonantNotes, "0.5s");
+          }
+
+          // Show glow
           createGlow(event.clientX, event.clientY);
+
+          // Occasional text pop: ~3% chance
+          if (Math.random() < 0.03) {
+            showMossMessage(event.clientX, event.clientY);
+          }
         }
       });
     });
