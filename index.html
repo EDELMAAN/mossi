@@ -123,19 +123,31 @@
 
       /*****************************************************
        * MOSS MESSAGE (glowing text)
+       * Normal vs Distress
        *****************************************************/
       .moss-message {
           position: absolute;
           color: #ffffff;
           font-size: 14px;
           z-index: 999; /* ensure on top */
-          text-shadow:
-            0 0 5px rgba(0, 255, 127, 0.8),
-            0 0 10px rgba(0, 255, 127, 0.5);
           pointer-events: none;
           opacity: 0;
           animation: fadeInOut 4s forwards ease-in-out;
           white-space: nowrap;
+      }
+      /* Normal state text glow */
+      .moss-message.normal {
+          text-shadow:
+            0 0 5px rgba(0, 255, 127, 0.8),
+            0 0 10px rgba(0, 255, 127, 0.5);
+      }
+      /* Distress state text is bigger + red glow */
+      .moss-message.distress {
+          font-size: 18px;
+          color: #ffcccc;
+          text-shadow:
+            0 0 5px rgba(255, 0, 0, 0.7),
+            0 0 10px rgba(255, 0, 0, 0.5);
       }
 
       @keyframes fadeInOut {
@@ -208,8 +220,8 @@
       const birdNotes = ["C6", "E6", "G6", "A6"];
       const bassNotes = ["C2", "D2", "E2", "F2", "G2", "A2"];
 
-      // Poetic lines
-      const mossMessages = [
+      // Poetic lines for normal (calm) state
+      const calmMessages = [
         "I remember the time before you. The air was colder.",
         "You bring warmth. Your breath touches my surface.",
         "The world trembles. My roots know before you do.",
@@ -217,6 +229,15 @@
         "I have seen ages pass. I still survive.",
         "Water shapes me, light nurtures me, you fascinate me.",
         "In your silence, I resonate."
+      ];
+
+      // Poetic lines for distress (overstimulated) state
+      const distressMessages = [
+        "Please move gently...",
+        "I'm fragile—soften your touch.",
+        "Your energy is too harsh for me.",
+        "My cells quiver—let me rest.",
+        "I need a moment to breathe."
       ];
 
       // Effects
@@ -319,13 +340,18 @@
 
       /*********************************************************
        * MOSS TEXT BUBBLE (glowing text)
+       * Distress vs. Normal
        *********************************************************/
-      function showMossMessage(x, y) {
+      function showMossMessage(x, y, isDistress) {
         const bubble = document.createElement("div");
-        bubble.className = "moss-message";
-        const msg = mossMessages[Math.floor(Math.random() * mossMessages.length)];
+        bubble.className = "moss-message " + (isDistress ? "distress" : "normal");
+
+        // Choose a random line from either calm or distress arrays
+        const chosenArray = isDistress ? distressMessages : calmMessages;
+        const msg = chosenArray[Math.floor(Math.random() * chosenArray.length)];
         bubble.textContent = msg;
 
+        // Position and attach
         bubble.style.left = x + "px";
         bubble.style.top = y + "px";
         document.body.appendChild(bubble);
@@ -337,6 +363,14 @@
           }
         }, 4000);
       }
+
+      /*********************************************************
+       * DISTRESS MESSAGES: COOLDOWN
+       * If in distress, we always show a message,
+       * but only once every N seconds to avoid spamming.
+       *********************************************************/
+      let lastDistressMessageTime = 0;
+      const DISTRESS_COOLDOWN_SECONDS = 2; // show a distress message at most once every 2s
 
       /*********************************************************
        * MOUSEMOVE: CHECK SPEED, CHECK IF INSIDE MOSS
@@ -375,9 +409,9 @@
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance <= radius) {
-          // Only increment stress if speed is above ~0.2 px/ms
-          if (speed > 0.2) {
-            stress = Math.min(stress + 6, 100);
+          // Only increment stress if speed is above ~0.3 px/ms
+          if (speed > 0.3) {
+            stress = Math.min(stress + 5, 100);
             updateSynthForStress();
           }
 
@@ -407,9 +441,19 @@
           // Show glow
           createGlow(event.clientX, event.clientY);
 
-          // Occasional text pop: ~3% chance
-          if (Math.random() < 0.03) {
-            showMossMessage(event.clientX, event.clientY);
+          // Check if we're in distress (> 50)
+          if (stress > 50) {
+            const nowSec = performance.now() / 1000;
+            if (nowSec - lastDistressMessageTime > DISTRESS_COOLDOWN_SECONDS) {
+              // Always show distress message (once per cooldown)
+              showMossMessage(event.clientX, event.clientY, true);
+              lastDistressMessageTime = nowSec;
+            }
+          } else {
+            // Calm state: 3% chance for a normal message
+            if (Math.random() < 0.03) {
+              showMossMessage(event.clientX, event.clientY, false);
+            }
           }
         }
       });
