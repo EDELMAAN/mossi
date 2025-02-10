@@ -5,187 +5,325 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Moss Intelligence Soundscape Teaser</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.26/Tone.js"></script>
+
   <style>
-      /* Reset & Body */
-      * {
-        box-sizing: border-box;
-      }
-      body {
-          background: black;
-          margin: 0;
-          overflow: hidden;
-          cursor: default;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          height: 100vh;
-          font-family: Arial, sans-serif;
-      }
+    /* RESET & BODY */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: black;
+      margin: 0;
+      overflow: hidden; /* no default scrolling (especially for desktop) */
+      cursor: default;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+    }
 
-      /* Buttons (Start / Info) */
-      #startButton,
-      #infoButton {
-          position: absolute;
-          padding: 15px 30px;
-          font-size: 18px;
-          cursor: pointer;
-          border: none;
-          color: #000;
-          border-radius: 5px;
-          font-weight: bold;
-          transition: background 0.3s, box-shadow 0.3s;
-          background: linear-gradient(
-            135deg,
-            rgba(0, 255, 127, 1) 0%,
-            rgba(120, 255, 180, 1) 100%
-          );
-          box-shadow: 0 0 10px rgba(0, 255, 127, 0.7);
-          text-align: center;
-          line-height: 1.4;
-      }
-      #startButton:hover,
-      #infoButton:hover {
-          background: linear-gradient(
-            135deg,
-            rgba(0, 255, 160, 1) 0%,
-            rgba(130, 255, 190, 1) 100%
-          );
-          box-shadow: 0 0 15px rgba(0, 255, 127, 1);
-      }
+    /*********************************************************
+     * START BUTTON
+     *********************************************************/
+    #startButton {
+      position: absolute;
+      z-index: 9999; /* above all */
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 15px 30px;
+      font-size: 18px;
+      cursor: pointer;
+      border: none;
+      color: #000;
+      border-radius: 5px;
+      font-weight: bold;
+      transition: background 0.3s, box-shadow 0.3s;
+      background: linear-gradient(135deg, rgba(0, 255, 127, 1) 0%, rgba(120, 255, 180, 1) 100%);
+      box-shadow: 0 0 10px rgba(0, 255, 127, 0.7);
+      text-align: center;
+      line-height: 1.4;
+    }
+    #startButton:hover {
+      background: linear-gradient(135deg, rgba(0, 255, 160, 1) 0%, rgba(130, 255, 190, 1) 100%);
+      box-shadow: 0 0 15px rgba(0, 255, 127, 1);
+    }
 
-      /* Positioning Start Button - put on top via higher z-index */
-      #startButton {
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          z-index: 9999; /* ensure button is above all else */
-      }
+    /*********************************************************
+     * AUTHOR + MOSS INTEL LINK (BOTTOM LEFT)
+     *********************************************************/
+    #authorContainer {
+      position: absolute;
+      bottom: 5px;
+      left: 5px;
+      display: flex;
+      align-items: center;
+      gap: 12px; /* spacing between name and link */
+      z-index: 10;
+    }
+    #authorNote {
+      color: #ffffff;
+      font-size: 14px;
+      text-shadow: 0 0 6px rgba(0, 255, 127, 0.7);
+    }
+    #mossLink {
+      font-size: 12px;
+      color: #000;
+      text-decoration: none;
+      font-weight: bold;
+      padding: 6px 10px;
+      border-radius: 3px;
+      background: linear-gradient(135deg, rgba(0,255,127,1) 0%, rgba(120,255,180,1) 100%);
+      box-shadow: 0 0 5px rgba(0, 255, 127, 0.5);
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+    #mossLink:hover {
+      background: linear-gradient(135deg, rgba(0, 255, 160, 1) 0%, rgba(130, 255, 190, 1) 100%);
+      box-shadow: 0 0 10px rgba(0, 255, 127, 1);
+    }
 
-      /* Info Button at Bottom Center */
-      #infoButton {
-          bottom: 5px;
-          left: 50%;
-          transform: translateX(-50%);
-          font-size: 16px;
-          z-index: 10;
-      }
+    /*********************************************************
+     * BOTTOM NAVIGATION (3 SMALL BUTTONS)
+     *********************************************************/
+    #bottomNav {
+      position: absolute;
+      bottom: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px; /* space between buttons */
+      z-index: 10;
+    }
+    .navButton {
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      color: #000;
+      border-radius: 5px;
+      font-weight: bold;
+      padding: 8px 16px;
+      background: linear-gradient(
+        135deg,
+        rgba(0, 255, 127, 1) 0%,
+        rgba(120, 255, 180, 1) 100%
+      );
+      box-shadow: 0 0 5px rgba(0, 255, 127, 0.5);
+      transition: background 0.3s, box-shadow 0.3s;
+      text-decoration: none;
+      text-align: center;
+    }
+    .navButton:hover {
+      background: linear-gradient(
+        135deg,
+        rgba(0, 255, 160, 1) 0%,
+        rgba(130, 255, 190, 1) 100%
+      );
+      box-shadow: 0 0 10px rgba(0, 255, 127, 1);
+    }
+    .highlight {
+      /* Slightly different green tone to highlight 'Next Page' */
+      background: linear-gradient(
+        135deg,
+        rgba(100, 255, 140, 1) 0%,
+        rgba(150, 255, 180, 1) 100%
+      ) !important;
+    }
 
-      /* Author Note */
-      #authorNote {
-          position: absolute;
-          color: #ffffff;
-          font-size: 14px;
-          z-index: 10;
-          text-shadow: 0 0 6px rgba(0, 255, 127, 0.7);
-          bottom: 5px;
-          left: 5px;
-      }
+    /********************************************************
+     * MOSS PATCH (Circle)
+     ********************************************************/
+    .moss {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 85vmin;
+      height: 85vmin;
+      background: radial-gradient(
+        circle,
+        rgba(0, 0, 0, 0) 30%,
+        rgba(0, 0, 0, 1) 70%
+      ),
+      url('https://raw.githubusercontent.com/EDELMAAN/mosstexture/refs/heads/main/mosstexture.webp')
+      no-repeat center center;
+      background-size: cover;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: filter 1s ease-in-out;
+      z-index: 5;
+      pointer-events: none; /* disabled until Start is pressed */
+    }
 
-      /* Moss Patch (Circle) 
-         Pointer events initially disabled so it won't interfere
-         with button clicks. We'll enable it after Start is pressed. */
+    /********************************************************
+     * GLOW EFFECT
+     ********************************************************/
+    .glow {
+      position: absolute;
+      width: 160px;
+      height: 160px;
+      border-radius: 20%;
+      pointer-events: none;
+      opacity: 0.4;
+      transition:
+        transform 0.01s linear,
+        opacity 5s ease-out,
+        background-color 0.5s ease-in-out;
+      mix-blend-mode: overlay;
+      z-index: 6;
+    }
+
+    /*****************************************************
+     * MOSS MESSAGE (glowing text)
+     * Normal vs Distress
+     *****************************************************/
+    .moss-message {
+      position: absolute;
+      color: #ffffff;
+      font-size: 14px;
+      z-index: 999; /* ensure on top */
+      pointer-events: none;
+      opacity: 0;
+      animation: fadeInOut 4s forwards ease-in-out;
+      white-space: nowrap;
+    }
+    /* Normal state text glow */
+    .moss-message.normal {
+      text-shadow:
+        0 0 5px rgba(0, 255, 127, 0.8),
+        0 0 10px rgba(0, 255, 127, 0.5);
+    }
+    /* Distress state text is bigger + red glow */
+    .moss-message.distress {
+      font-size: 18px;
+      color: #ffcccc;
+      text-shadow:
+        0 0 5px rgba(255, 0, 0, 0.7),
+        0 0 10px rgba(255, 0, 0, 0.5);
+    }
+
+    @keyframes fadeInOut {
+      0% {
+        transform: translate(-50%, -50%) scale(0.9);
+        opacity: 0;
+      }
+      15% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+      85% {
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0;
+      }
+    }
+
+    /********************************************************
+     * RESPONSIVE DESIGN (MEDIA QUERY)
+     * Adjust layout for smaller screens (e.g. max-width: 600px)
+     ********************************************************/
+    @media (max-width: 600px) {
+      /* Reduce moss size for narrower screens */
       .moss {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 85vmin;
-          height: 85vmin;
-          background: radial-gradient(
-            circle,
-            rgba(0, 0, 0, 0) 30%,
-            rgba(0, 0, 0, 1) 70%
-          ),
-          url('https://raw.githubusercontent.com/EDELMAAN/mosstexture/refs/heads/main/mosstexture.webp')
-          no-repeat center center;
-          background-size: cover;
-          border-radius: 50%;
-          transform: translate(-50%, -50%);
-          transition: filter 1s ease-in-out;
-          z-index: 5;
-          pointer-events: none; /* disabled until Start is pressed */
+        width: 70vmin;
+        height: 70vmin;
+      }
+      
+      /* Make Start button a bit smaller & shift it up */
+      #startButton {
+        font-size: 16px;
+        padding: 10px 20px;
+        top: 45%;
       }
 
-      /* Glow Effect */
-      .glow {
-          position: absolute;
-          width: 160px;
-          height: 160px;
-          border-radius: 20%;
-          pointer-events: none;
-          opacity: 0.4;
-          transition:
-            transform 0.01s linear,
-            opacity 5s ease-out,
-            background-color 0.5s ease-in-out;
-          mix-blend-mode: overlay;
-          z-index: 6;
+      /* Possibly reduce font size in bottom nav & stack them */
+      #bottomNav {
+        flex-direction: column;
+        bottom: 10px;
+        gap: 8px;
       }
 
-      /*****************************************************
-       * MOSS MESSAGE (glowing text)
-       * Normal vs Distress
-       *****************************************************/
-      .moss-message {
-          position: absolute;
-          color: #ffffff;
-          font-size: 14px;
-          z-index: 999; /* ensure on top */
-          pointer-events: none;
-          opacity: 0;
-          animation: fadeInOut 4s forwards ease-in-out;
-          white-space: nowrap;
-      }
-      /* Normal state text glow */
-      .moss-message.normal {
-          text-shadow:
-            0 0 5px rgba(0, 255, 127, 0.8),
-            0 0 10px rgba(0, 255, 127, 0.5);
-      }
-      /* Distress state text is bigger + red glow */
-      .moss-message.distress {
-          font-size: 18px;
-          color: #ffcccc;
-          text-shadow:
-            0 0 5px rgba(255, 0, 0, 0.7),
-            0 0 10px rgba(255, 0, 0, 0.5);
+      .navButton {
+        font-size: 12px;
+        padding: 6px 12px;
       }
 
-      @keyframes fadeInOut {
-          0% {
-            transform: translate(-50%, -50%) scale(0.9);
-            opacity: 0;
-          }
-          15% {
-            transform: translate(-50%, -50%) scale(1);
-            opacity: 1;
-          }
-          85% {
-            opacity: 1;
-          }
-          100% {
-            transform: translate(-50%, -50%) scale(1);
-            opacity: 0;
-          }
+      #authorNote {
+        font-size: 12px;
       }
+      #mossLink {
+        font-size: 10px;
+      }
+    }
   </style>
+
 </head>
 <body>
-  <!-- UI Elements -->
+
+  <!-- START BUTTON -->
   <button id="startButton">
     What if moss could speak to us?<br>
     <small style="font-size: 14px; font-weight: normal;">(Please turn on your speakers)</small>
   </button>
 
-  <div id="authorNote">Johann Edelmann</div>
-  
-  <a href="https://prezi.com/view/0zKakpR6pfl7myyX8DAq/" target="_blank">
-      <button id="infoButton">More about Moss Intelligence</button>
-  </a>
+  <!-- AUTHOR + MOSS LINK (BOTTOM LEFT) -->
+  <div id="authorContainer">
+    <div id="authorNote">Johann Edelmann</div>
+    <a id="mossLink" href="https://prezi.com/view/0zKakpR6pfl7myyX8DAq/" target="_blank">
+      More about Moss Intelligence
+    </a>
+  </div>
 
-  <!-- Moss Patch -->
+  <!-- 3 SMALL BUTTONS (BOTTOM CENTER) -->
+  <div id="bottomNav">
+    <a class="navButton" href="http://sculptures.live" target="_blank">Landing Page</a>
+    <a class="navButton highlight" href="https://diegobehncke.works/a-witness-that-hums" target="_blank">
+      Next Page
+    </a>
+    <button class="navButton" id="randomPageButton">Random Page</button>
+  </div>
+
+  <!-- MOSS PATCH -->
   <div class="moss" id="moss"></div>
 
   <script>
+    /***********************************************************
+     * RANDOM PAGE LINKS
+     ***********************************************************/
+    const randomLinks = [
+      "https://seloseloselo1.github.io/Tensor-Tympani-Bass/",
+      "https://github.com/hoppjuliska/a-33racadubbra/blob/main/a33racadubbra.png?raw=true",
+      "https://drive.google.com/file/d/185ZPjEM7ubPtKeKoNQPrHSvfLB4UJRFT/view?usp=sharing",
+      "https://zilion.xyz/terrapath.html",
+      "https://drive.google.com/file/d/1_TPWO7Qr_8dfDxbF1qNfYqHTZib6he-T/view?usp=drive_link",
+      "https://double-empathy.neocities.org",
+      "https://www.stratosbichakis.com/magma",
+      "https://diegobehncke.works/a-witness-that-hums",
+      "https://miro.com/app/board/uXjVLj5giUE=/",
+      "https://evaingver.github.io/images/",
+      "https://www.derrekchow.com/three-points-of-contact",
+      "https://github.com/Marie00000/Experience-of-Darkness.git",
+      "https://leol0u.github.io/MicroCatcher-LL/",
+      "https://files.catbox.moe/umxsr5.pdf",
+      "https://5ine-w.github.io/shuhu/WF205_e.pdf"
+    ];
+
+    // On "Random Page" button click, open a random link
+    document.addEventListener("DOMContentLoaded", function() {
+      const randomBtn = document.getElementById("randomPageButton");
+      randomBtn.addEventListener("click", () => {
+        const link = randomLinks[Math.floor(Math.random() * randomLinks.length)];
+        window.open(link, "_blank"); // new tab
+      });
+    });
+
+    /***********************************************************
+     * MAIN SOUND & STRESS LOGIC
+     * Now using Pointer Events for cross-device (mouse + touch).
+     ***********************************************************/
     document.addEventListener("DOMContentLoaded", function () {
       const startButton = document.getElementById("startButton");
       const moss = document.getElementById("moss");
@@ -195,8 +333,8 @@
 
       /********************************************************
        * STRESS MECHANIC
-       * Only increments on "fast" movement. 
-       * Stress decays quickly so it returns to normal in ~2-3s.
+       * - increments on "fast" movement
+       * - decays quickly to revert in ~2–3s
        ********************************************************/
       let stress = 0;
       let lastX = null;
@@ -246,13 +384,19 @@
 
       // Start Button Click
       startButton.addEventListener("click", async function () {
-        document.body.style.cursor = "none"; // Hide cursor after click
-        await Tone.start();
-        startButton.style.display = "none";   // Hide the button
+        // Hide cursor after click
+        document.body.style.cursor = "none";
 
-        // Enable the moss to register pointer events:
+        // Try to unlock audio for mobile + desktop
+        await Tone.start();
+
+        // Hide start button
+        startButton.style.display = "none";
+
+        // Enable the moss patch to register pointer events
         moss.style.pointerEvents = "auto";
 
+        // Initialize audio
         startAudio();
       });
 
@@ -263,55 +407,50 @@
         // Initialize synths
         synth = new Tone.PolySynth(Tone.Synth, { maxPolyphony: 3 }).toDestination();
         synth.set({
-            oscillator: { type: "sine" },
-            envelope: { attack: 1, sustain: 0.3, release: 4 },
-            volume: -25
+          oscillator: { type: "sine" },
+          envelope: { attack: 1, sustain: 0.3, release: 4 },
+          volume: -25
         });
         synth.chain(reverb, limiter);
 
         twinkleSynth = new Tone.PolySynth(Tone.Synth, { maxPolyphony: 2 }).toDestination();
         twinkleSynth.set({
-            oscillator: { type: "triangle" },
-            envelope: { attack: 0.1, decay: 0.3, sustain: 0.3, release: 1 },
-            volume: -30
+          oscillator: { type: "triangle" },
+          envelope: { attack: 0.1, decay: 0.3, sustain: 0.3, release: 1 },
+          volume: -30
         });
         twinkleSynth.chain(reverb, limiter);
 
         birdSynth = new Tone.Synth({
-            oscillator: { type: "sine" },
-            envelope: { attack: 0.05, decay: 0.1, sustain: 0.1, release: 0.3 },
-            volume: -28
+          oscillator: { type: "sine" },
+          envelope: { attack: 0.05, decay: 0.1, sustain: 0.1, release: 0.3 },
+          volume: -28
         }).toDestination();
         birdSynth.chain(reverb, limiter);
 
         bassSynth = new Tone.Synth({
-            oscillator: { type: "sawtooth" },
-            envelope: { attack: 2, decay: 1, sustain: 1, release: 5 },
-            volume: -30
+          oscillator: { type: "sawtooth" },
+          envelope: { attack: 2, decay: 1, sustain: 1, release: 5 },
+          volume: -30
         }).toDestination();
         bassSynth.chain(reverb, limiter);
       }
 
       /*********************************************************
        * UPDATE SYNTH CHARACTER WHEN STRESS CHANGES
-       * If stress is above 50, the main synth changes to "square"
        *********************************************************/
       function updateSynthForStress() {
         if (!synth) return;
+        // Switch to square wave if stress > 50
         if (stress > 50) {
-          // Over threshold => more intense wave
           synth.set({ oscillator: { type: "square" }});
         } else {
-          // Return to gentler wave
           synth.set({ oscillator: { type: "sine" }});
         }
       }
 
       /*********************************************************
        * CREATE GLOW (Color changes based on stress)
-       * < 50 => white
-       * 50-80 => yellowish
-       * >80 => red
        *********************************************************/
       function createGlow(x, y) {
         const glow = document.createElement("div");
@@ -329,7 +468,7 @@
         glow.style.left = `${x - 80}px`;
         glow.style.top = `${y - 80}px`;
 
-        // Fade out after short time
+        // Fade out
         setTimeout(() => {
           glow.style.opacity = "0";
           setTimeout(() => {
@@ -339,45 +478,40 @@
       }
 
       /*********************************************************
-       * MOSS TEXT BUBBLE (glowing text)
-       * Distress vs. Normal
+       * SHOW MOSS MESSAGE
        *********************************************************/
       function showMossMessage(x, y, isDistress) {
         const bubble = document.createElement("div");
         bubble.className = "moss-message " + (isDistress ? "distress" : "normal");
 
-        // Choose a random line from either calm or distress arrays
         const chosenArray = isDistress ? distressMessages : calmMessages;
         const msg = chosenArray[Math.floor(Math.random() * chosenArray.length)];
         bubble.textContent = msg;
 
-        // Position and attach
         bubble.style.left = x + "px";
         bubble.style.top = y + "px";
         document.body.appendChild(bubble);
 
-        // Remove after animation
+        // Remove after fade animation (4s)
         setTimeout(() => {
-          if (bubble.parentNode) {
-            bubble.parentNode.removeChild(bubble);
-          }
+          if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
         }, 4000);
       }
 
       /*********************************************************
        * DISTRESS MESSAGES: COOLDOWN
-       * If in distress, we always show a message,
-       * but only once every N seconds to avoid spamming.
        *********************************************************/
       let lastDistressMessageTime = 0;
-      const DISTRESS_COOLDOWN_SECONDS = 2; // show a distress message at most once every 2s
+      const DISTRESS_COOLDOWN_SECONDS = 2; 
 
       /*********************************************************
-       * MOUSEMOVE: CHECK SPEED, CHECK IF INSIDE MOSS
+       * POINTERMOVE LISTENER (REPLACES MOUSEMOVE)
+       * Works for mouse, stylus, and touch
        *********************************************************/
-      document.addEventListener("mousemove", (event) => {
+      document.addEventListener("pointermove", (event) => {
         if (!started) return;
 
+        // We can track speed by comparing pointer positions over time
         const now = performance.now();
         let speed = 0;
 
@@ -394,9 +528,10 @@
         lastY = event.clientY;
         lastMoveTime = now;
 
-        const timeNow = Tone.now();
-        if (timeNow - lastTriggerTime < 0.1) return; // limit triggers
-        lastTriggerTime = timeNow;
+        // Limit how often we trigger notes
+        const toneNow = Tone.now();
+        if (toneNow - lastTriggerTime < 0.1) return;
+        lastTriggerTime = toneNow;
 
         // Moss bounding box
         const rect = moss.getBoundingClientRect();
@@ -408,22 +543,22 @@
         const dy = event.clientY - centerY;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
+        // If inside the moss circle
         if (distance <= radius) {
-          // Only increment stress if speed is above ~0.3 px/ms
+          // Only increase stress if movement is fast enough
           if (speed > 0.3) {
             stress = Math.min(stress + 5, 100);
             updateSynthForStress();
           }
 
           // Trigger random notes
-          const xPercent = (event.clientX - rect.left) / rect.width;
-          const yPercent = (event.clientY - rect.top) / rect.height;
-
           if (Math.random() < 0.6) {
+            const xPercent = (event.clientX - rect.left) / rect.width;
             const noteIndex = Math.floor(xPercent * baseNotes.length);
             synth.triggerAttackRelease([baseNotes[noteIndex]], "1s");
           }
           if (Math.random() < 0.3) {
+            const yPercent = (event.clientY - rect.top) / rect.height;
             const twinkleIndex = Math.floor(yPercent * twinkleNotes.length);
             twinkleSynth.triggerAttackRelease(twinkleNotes[twinkleIndex], "0.5s");
           }
@@ -432,32 +567,39 @@
             birdSynth.triggerAttackRelease(birdNotes[birdIndex], "0.3s");
           }
 
-          // If stress is very high (>80), random chance of dissonant chord
+          // If stress is very high, chance of dissonant chord
           if (stress > 80 && Math.random() < 0.3) {
             const dissonantNotes = ["C4", "Db4", "D4", "F#4"];
             synth.triggerAttackRelease(dissonantNotes, "0.5s");
           }
 
-          // Show glow
+          // Show glow at pointer
           createGlow(event.clientX, event.clientY);
 
-          // Check if we're in distress (> 50)
+          // Distress or normal messages
+          const nowSec = performance.now() / 1000;
           if (stress > 50) {
-            const nowSec = performance.now() / 1000;
+            // Distress messages shown once every 2s max
             if (nowSec - lastDistressMessageTime > DISTRESS_COOLDOWN_SECONDS) {
-              // Always show distress message (once per cooldown)
               showMossMessage(event.clientX, event.clientY, true);
               lastDistressMessageTime = nowSec;
             }
           } else {
-            // Calm state: 3% chance for a normal message
+            // Calm: 3% chance per event
             if (Math.random() < 0.03) {
               showMossMessage(event.clientX, event.clientY, false);
             }
           }
         }
-      });
+      }, { passive: false });  /* `passive: false` helps if we want to prevent page scrolling on touch */
+
+      /* 
+       Optionally, on iOS Safari, you might want to do:
+       document.addEventListener("touchmove", e => e.preventDefault(), { passive: false });
+       if you find the page scrolls or "rubber-bands" while moving your finger
+      */
     });
   </script>
+
 </body>
 </html>
