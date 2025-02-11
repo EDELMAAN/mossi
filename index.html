@@ -95,7 +95,7 @@
       left: 50%;
       transform: translateX(-50%);
       display: flex;
-      flex-direction: row;  /* horizontal alignment */
+      flex-direction: row;
       gap: 10px; /* space between buttons */
       z-index: 10;
     }
@@ -391,10 +391,17 @@
         // Hide cursor after click
         document.body.style.cursor = "none";
 
-        // Try to unlock audio for mobile + desktop
+        // 1) Attempt to unlock audio for mobile + desktop
         await Tone.start();
-        // Additional manual resume if needed (especially iOS Safari)
         await Tone.context.resume();
+
+        // 2) Make a tiny beep immediately on user gesture to fully unlock iOS audio
+        try {
+          const beepSynth = new Tone.Synth({ volume: -40 }).toDestination();
+          beepSynth.triggerAttackRelease("C5", 0.05); // very short beep
+        } catch(e) {
+          console.warn("Beep synth failed:", e);
+        }
 
         // Hide start button
         startButton.style.display = "none";
@@ -597,12 +604,7 @@
             }
           }
         }
-      }, { passive: false }); 
-      /*
-         The passive:false helps ensure we can prevent scrolling on iOS if desired.
-         If you find the page "bounces" on iOS, you can also do:
-         document.addEventListener("touchmove", e => e.preventDefault(), { passive: false });
-      */
+      }, { passive: false });
     });
   </script>
 
