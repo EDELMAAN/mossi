@@ -87,6 +87,7 @@
 
     /*********************************************************
      * BOTTOM NAVIGATION (3 SMALL BUTTONS)
+     * Default: centered at bottom for desktop
      *********************************************************/
     #bottomNav {
       position: absolute;
@@ -94,6 +95,7 @@
       left: 50%;
       transform: translateX(-50%);
       display: flex;
+      flex-direction: row;  /* horizontal alignment */
       gap: 10px; /* space between buttons */
       z-index: 10;
     }
@@ -223,7 +225,7 @@
 
     /********************************************************
      * RESPONSIVE DESIGN (MEDIA QUERY)
-     * Adjust layout for smaller screens (e.g. max-width: 600px)
+     * For smaller screens (max-width: 600px)
      ********************************************************/
     @media (max-width: 600px) {
       /* Reduce moss size for narrower screens */
@@ -231,7 +233,7 @@
         width: 70vmin;
         height: 70vmin;
       }
-      
+
       /* Make Start button a bit smaller & shift it up */
       #startButton {
         font-size: 16px;
@@ -239,11 +241,13 @@
         top: 45%;
       }
 
-      /* Possibly reduce font size in bottom nav & stack them */
+      /* SHIFT THE 3 BUTTONS A BIT HIGHER AND LEFT
+         so they don't overlap the author link 
+       */
       #bottomNav {
-        flex-direction: column;
-        bottom: 10px;
-        gap: 8px;
+        bottom: 50px; /* more spacing above bottom? adjust as needed */
+        left: 5px;    /* put it near left so it's not overlapping center? */
+        transform: none; /* remove horizontal centering */
       }
 
       .navButton {
@@ -277,7 +281,7 @@
     </a>
   </div>
 
-  <!-- 3 SMALL BUTTONS (BOTTOM CENTER) -->
+  <!-- 3 SMALL BUTTONS (BOTTOM CENTER on desktop, bottom-left on phone) -->
   <div id="bottomNav">
     <a class="navButton" href="http://sculptures.live" target="_blank">Landing Page</a>
     <a class="navButton highlight" href="https://diegobehncke.works/a-witness-that-hums" target="_blank">
@@ -322,7 +326,7 @@
 
     /***********************************************************
      * MAIN SOUND & STRESS LOGIC
-     * Now using Pointer Events for cross-device (mouse + touch).
+     * Using Pointer Events for cross-device (mouse + touch).
      ***********************************************************/
     document.addEventListener("DOMContentLoaded", function () {
       const startButton = document.getElementById("startButton");
@@ -333,8 +337,8 @@
 
       /********************************************************
        * STRESS MECHANIC
-       * - increments on "fast" movement
-       * - decays quickly to revert in ~2–3s
+       * increments on "fast" movement
+       * decays quickly to revert in ~2–3s
        ********************************************************/
       let stress = 0;
       let lastX = null;
@@ -389,6 +393,8 @@
 
         // Try to unlock audio for mobile + desktop
         await Tone.start();
+        // Additional manual resume if needed (especially iOS Safari)
+        await Tone.context.resume();
 
         // Hide start button
         startButton.style.display = "none";
@@ -591,12 +597,11 @@
             }
           }
         }
-      }, { passive: false });  /* `passive: false` helps if we want to prevent page scrolling on touch */
-
-      /* 
-       Optionally, on iOS Safari, you might want to do:
-       document.addEventListener("touchmove", e => e.preventDefault(), { passive: false });
-       if you find the page scrolls or "rubber-bands" while moving your finger
+      }, { passive: false }); 
+      /*
+         The passive:false helps ensure we can prevent scrolling on iOS if desired.
+         If you find the page "bounces" on iOS, you can also do:
+         document.addEventListener("touchmove", e => e.preventDefault(), { passive: false });
       */
     });
   </script>
