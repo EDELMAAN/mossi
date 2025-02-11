@@ -52,6 +52,20 @@
       box-shadow: 0 0 15px rgba(0, 255, 127, 1);
     }
 
+    /* Small phone-only hint displayed under the Start button */
+    #phoneHint {
+      position: absolute;
+      top: calc(50% + 60px); /* slightly below the start button */
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 14px;
+      color: #fff;
+      text-shadow: 0 0 6px rgba(0, 255, 127, 0.7);
+      text-align: center;
+      z-index: 9999;
+      display: none; /* hidden by default, shown on phone */
+    }
+
     /*********************************************************
      * AUTHOR + MOSS INTEL LINK (BOTTOM LEFT)
      *********************************************************/
@@ -228,10 +242,21 @@
      * For smaller screens (max-width: 600px)
      ********************************************************/
     @media (max-width: 600px) {
-      /* Reduce moss size for narrower screens */
+      /* Display phone hint. */
+      #phoneHint {
+        display: block;
+      }
+
+      /* Slightly bigger moss patch for phones */
       .moss {
-        width: 70vmin;
-        height: 70vmin;
+        width: 90vmin;
+        height: 90vmin;
+      }
+
+      /* Reduce glow size so it doesn't feel too huge on small screens */
+      .glow {
+        width: 100px;
+        height: 100px;
       }
 
       /* Make Start button a bit smaller & shift it up */
@@ -263,7 +288,6 @@
       }
     }
   </style>
-
 </head>
 <body>
 
@@ -272,6 +296,9 @@
     What if moss could speak to us?<br>
     <small style="font-size: 14px; font-weight: normal;">(Please turn on your speakers)</small>
   </button>
+
+  <!-- PHONE HINT (Only shown on mobile via media query) -->
+  <div id="phoneHint">Make sure your phone is not in silent mode.</div>
 
   <!-- AUTHOR + MOSS LINK (BOTTOM LEFT) -->
   <div id="authorContainer">
@@ -388,17 +415,17 @@
 
       // Start Button Click
       startButton.addEventListener("click", async function () {
-        // Hide cursor after click
+        // Hide cursor after click (desktop)
         document.body.style.cursor = "none";
 
-        // 1) Attempt to unlock audio for mobile + desktop
+        // Try to unlock audio for mobile + desktop
         await Tone.start();
         await Tone.context.resume();
 
-        // 2) Make a tiny beep immediately on user gesture to fully unlock iOS audio
+        // Tiny beep to ensure iOS fully unlocks audio
         try {
           const beepSynth = new Tone.Synth({ volume: -40 }).toDestination();
-          beepSynth.triggerAttackRelease("C5", 0.05); // very short beep
+          beepSynth.triggerAttackRelease("C5", 0.05); // short beep
         } catch(e) {
           console.warn("Beep synth failed:", e);
         }
@@ -607,6 +634,5 @@
       }, { passive: false });
     });
   </script>
-
 </body>
 </html>
