@@ -52,6 +52,20 @@
       box-shadow: 0 0 15px rgba(0, 255, 127, 1);
     }
 
+    /* PHONE-ONLY HINT about silent mode */
+    #phoneHint {
+      position: absolute;
+      top: calc(50% + 60px);
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 14px;
+      color: #fff;
+      text-shadow: 0 0 6px rgba(0, 255, 127, 0.7);
+      text-align: center;
+      z-index: 9999;
+      display: none; /* hidden by default, shown on phone only */
+    }
+
     /*********************************************************
      * AUTHOR + MOSS INTEL LINK (BOTTOM LEFT)
      *********************************************************/
@@ -159,7 +173,7 @@
     }
 
     /********************************************************
-     * GLOW EFFECT
+     * GLOW EFFECT (Desktop default)
      ********************************************************/
     .glow {
       position: absolute;
@@ -228,10 +242,21 @@
      * For smaller screens (max-width: 600px)
      ********************************************************/
     @media (max-width: 600px) {
-      /* Reduce moss size for narrower screens */
+      /* Display phone hint. */
+      #phoneHint {
+        display: block;
+      }
+
+      /* Slightly bigger moss patch for phones */
       .moss {
-        width: 70vmin;
-        height: 70vmin;
+        width: 90vmin;
+        height: 90vmin;
+      }
+
+      /* The glow is smaller on phone. We'll keep it at 100x100. */
+      .glow {
+        width: 100px;
+        height: 100px;
       }
 
       /* Make Start button a bit smaller & shift it up */
@@ -263,7 +288,6 @@
       }
     }
   </style>
-
 </head>
 <body>
 
@@ -272,6 +296,9 @@
     What if moss could speak to us?<br>
     <small style="font-size: 14px; font-weight: normal;">(Please turn on your speakers)</small>
   </button>
+
+  <!-- PHONE HINT (Only shown on mobile via media query) -->
+  <div id="phoneHint">Make sure your phone is not in silent mode.</div>
 
   <!-- AUTHOR + MOSS LINK (BOTTOM LEFT) -->
   <div id="authorContainer">
@@ -294,6 +321,12 @@
   <div class="moss" id="moss"></div>
 
   <script>
+    /***********************************************************
+     * Detect if phone or not (simple approach by screen width).
+     * We'll store in a variable to handle glow offset logic.
+     ***********************************************************/
+    const isPhone = window.matchMedia("(max-width: 600px)").matches;
+
     /***********************************************************
      * RANDOM PAGE LINKS
      ***********************************************************/
@@ -320,7 +353,7 @@
       const randomBtn = document.getElementById("randomPageButton");
       randomBtn.addEventListener("click", () => {
         const link = randomLinks[Math.floor(Math.random() * randomLinks.length)];
-        window.open(link, "_blank"); // new tab
+        window.open(link, "_blank");
       });
     });
 
@@ -330,6 +363,7 @@
      ***********************************************************/
     document.addEventListener("DOMContentLoaded", function () {
       const startButton = document.getElementById("startButton");
+      const phoneHint = document.getElementById("phoneHint");
       const moss = document.getElementById("moss");
 
       let started = false;
@@ -337,8 +371,6 @@
 
       /********************************************************
        * STRESS MECHANIC
-       * increments on "fast" movement
-       * decays quickly to revert in ~2–3s
        ********************************************************/
       let stress = 0;
       let lastX = null;
@@ -388,28 +420,24 @@
 
       // Start Button Click
       startButton.addEventListener("click", async function () {
-        // Hide cursor after click
-        document.body.style.cursor = "none";
+        document.body.style.cursor = "none"; // hide cursor after click
 
-        // 1) Attempt to unlock audio for mobile + desktop
+        // Hide phone hint once user taps the button
+        phoneHint.style.display = "none";
+
         await Tone.start();
         await Tone.context.resume();
 
-        // 2) Make a tiny beep immediately on user gesture to fully unlock iOS audio
+        // Tiny beep to ensure iOS fully unlocks audio
         try {
           const beepSynth = new Tone.Synth({ volume: -40 }).toDestination();
-          beepSynth.triggerAttackRelease("C5", 0.05); // very short beep
+          beepSynth.triggerAttackRelease("C5", 0.05);
         } catch(e) {
           console.warn("Beep synth failed:", e);
         }
 
-        // Hide start button
-        startButton.style.display = "none";
-
-        // Enable the moss patch to register pointer events
-        moss.style.pointerEvents = "auto";
-
-        // Initialize audio
+        startButton.style.display = "none";   // hide start button
+        moss.style.pointerEvents = "auto";    // allow interaction
         startAudio();
       });
 
@@ -464,22 +492,27 @@
 
       /*********************************************************
        * CREATE GLOW (Color changes based on stress)
+       * On phone => glow is smaller, offset is 50
+       * On desktop => glow is bigger, offset is 80
        *********************************************************/
       function createGlow(x, y) {
         const glow = document.createElement("div");
         glow.classList.add("glow");
         document.body.appendChild(glow);
 
-        let glowColor = "255, 255, 255"; // white
+        let glowColor = "255, 255, 255"; // default white
         if (stress > 50 && stress <= 80) {
           glowColor = "255, 255, 0"; // yellowish
         } else if (stress > 80) {
           glowColor = "255, 0, 0";   // red
         }
 
+        // Offset depends on phone vs desktop
+        const offset = isPhone ? 50 : 80;
+
         glow.style.background = `radial-gradient(circle, rgba(${glowColor},0.7) 0%, rgba(0, 0, 0, 0) 100%)`;
-        glow.style.left = `${x - 80}px`;
-        glow.style.top = `${y - 80}px`;
+        glow.style.left = `${x - offset}px`;
+        glow.style.top = `${y - offset}px`;
 
         // Fade out
         setTimeout(() => {
@@ -518,35 +551,32 @@
       const DISTRESS_COOLDOWN_SECONDS = 2; 
 
       /*********************************************************
-       * POINTERMOVE LISTENER (REPLACES MOUSEMOVE)
-       * Works for mouse, stylus, and touch
+       * POINTERMOVE (mouse + touch)
        *********************************************************/
       document.addEventListener("pointermove", (event) => {
         if (!started) return;
 
-        // We can track speed by comparing pointer positions over time
+        // speed calculation
         const now = performance.now();
         let speed = 0;
-
         if (lastX !== null && lastY !== null && lastMoveTime !== null) {
           const dx = event.clientX - lastX;
           const dy = event.clientY - lastY;
           const dt = now - lastMoveTime;
           const dist = Math.sqrt(dx*dx + dy*dy);
-          // Speed in px/ms
-          speed = dist / dt;
+          speed = dist / dt; // px/ms
         }
 
         lastX = event.clientX;
         lastY = event.clientY;
         lastMoveTime = now;
 
-        // Limit how often we trigger notes
+        // limit triggers
         const toneNow = Tone.now();
         if (toneNow - lastTriggerTime < 0.1) return;
         lastTriggerTime = toneNow;
 
-        // Moss bounding box
+        // check if inside moss circle
         const rect = moss.getBoundingClientRect();
         const radius = rect.width / 2;
         const centerX = rect.left + radius;
@@ -556,15 +586,14 @@
         const dy = event.clientY - centerY;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
-        // If inside the moss circle
         if (distance <= radius) {
-          // Only increase stress if movement is fast enough
+          // Only add stress if speed is enough
           if (speed > 0.3) {
             stress = Math.min(stress + 5, 100);
             updateSynthForStress();
           }
 
-          // Trigger random notes
+          // Random notes
           if (Math.random() < 0.6) {
             const xPercent = (event.clientX - rect.left) / rect.width;
             const noteIndex = Math.floor(xPercent * baseNotes.length);
@@ -580,25 +609,23 @@
             birdSynth.triggerAttackRelease(birdNotes[birdIndex], "0.3s");
           }
 
-          // If stress is very high, chance of dissonant chord
+          // dissonant chord if stress > 80
           if (stress > 80 && Math.random() < 0.3) {
             const dissonantNotes = ["C4", "Db4", "D4", "F#4"];
             synth.triggerAttackRelease(dissonantNotes, "0.5s");
           }
 
-          // Show glow at pointer
+          // create glow at pointer
           createGlow(event.clientX, event.clientY);
 
-          // Distress or normal messages
+          // Distress or calm messages
           const nowSec = performance.now() / 1000;
           if (stress > 50) {
-            // Distress messages shown once every 2s max
             if (nowSec - lastDistressMessageTime > DISTRESS_COOLDOWN_SECONDS) {
               showMossMessage(event.clientX, event.clientY, true);
               lastDistressMessageTime = nowSec;
             }
           } else {
-            // Calm: 3% chance per event
             if (Math.random() < 0.03) {
               showMossMessage(event.clientX, event.clientY, false);
             }
@@ -607,6 +634,5 @@
       }, { passive: false });
     });
   </script>
-
 </body>
 </html>
